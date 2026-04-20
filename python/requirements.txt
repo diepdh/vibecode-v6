@@ -1,0 +1,11 @@
+# Vibecode v6 - Python Requirements
+# No external dependencies required for core functionality
+# All functionality uses stdlib only
+
+# Optional: For better JSON parsing
+# jsonschema>=4.0.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=22.0.0
+# mypy>=0.990

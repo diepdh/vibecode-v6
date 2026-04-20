@@ -1,0 +1,13 @@
+{
+  "status": "planning_complete",
+  "current_task_index": 0,
+  "current_retry": 0,
+  "max_retries_per_task": 2,
+  "completed_tasks": [],
+  "blocked_task": null,
+  "metadata": {
+    "total_tasks": 0,
+    "started_at": null,
+    "completed_at": null
+  }
+}

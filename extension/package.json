@@ -1,0 +1,161 @@
+{
+  "name": "vibecode-v6",
+  "displayName": "Vibecode v6",
+  "description": "AI-orchestrated coding workflow with multi-agent planning and automated execution",
+  "version": "6.0.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diepdh/vibecode-v6.git"
+  },
+  "homepage": "https://github.com/diepdh/vibecode-v6",
+  "bugs": {
+    "url": "https://github.com/diepdh/vibecode-v6/issues"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:vibecode.showPanel",
+    "onCommand:vibecode.initWorkspace",
+    "onView:vibecode.controlPanel"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibecode.initWorkspace",
+        "title": "Vibecode: Init Workspace"
+      },
+      {
+        "command": "vibecode.prepareManualPhaseA",
+        "title": "Vibecode: Prepare Manual Phase A"
+      },
+      {
+        "command": "vibecode.showPanel",
+        "title": "Vibecode: Show Control Panel"
+      },
+      {
+        "command": "vibecode.generatePlan",
+        "title": "Vibecode: Generate Plan"
+      },
+      {
+        "command": "vibecode.getClaudeFeedback",
+        "title": "Vibecode: Get Claude Feedback"
+      },
+      {
+        "command": "vibecode.getGeminiFeedback",
+        "title": "Vibecode: Get Gemini Feedback"
+      },
+      {
+        "command": "vibecode.synthesizeBlueprint",
+        "title": "Vibecode: Synthesize Blueprint"
+      },
+      {
+        "command": "vibecode.initTasks",
+        "title": "Vibecode: Init Tasks"
+      },
+      {
+        "command": "vibecode.startLoop",
+        "title": "Vibecode: Start Execution Loop"
+      },
+      {
+        "command": "vibecode.stopLoop",
+        "title": "Vibecode: Stop Loop"
+      },
+      {
+        "command": "vibecode.showStatus",
+        "title": "Vibecode: Show Status"
+      },
+      {
+        "command": "vibecode.resetState",
+        "title": "Vibecode: Reset State"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vibecode-panel",
+          "title": "Vibecode v6",
+          "icon": "resources/vibecode-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibecode-panel": [
+        {
+          "type": "webview",
+          "id": "vibecode.controlPanel",
+          "name": "Control Panel"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Vibecode",
+      "properties": {
+        "vibecode.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Python executable path. Empty = auto detect (python on Windows, python3 on Unix)."
+        },
+        "vibecode.scriptsDir": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to Vibecode python scripts directory (contains orchestrator.py)."
+        },
+        "vibecode.brainCli": {
+          "type": "string",
+          "default": "codex",
+          "description": "Brain CLI command (for planning + reviewer). Example: codex, claude."
+        },
+        "vibecode.brainPhaseAModel": {
+          "type": "string",
+          "default": "gpt-5.4",
+          "description": "Model for Brain in Phase A planning/synthesis."
+        },
+        "vibecode.reviewerModel": {
+          "type": "string",
+          "default": "gpt-5.3-codex",
+          "description": "Model for reviewer in Phase B."
+        },
+        "vibecode.coderCli": {
+          "type": "string",
+          "default": "gemini",
+          "description": "Coder CLI command."
+        },
+        "vibecode.coderModel": {
+          "type": "string",
+          "default": "",
+          "description": "Optional model for coder. Empty = let CLI auto-select."
+        },
+        "vibecode.brainAdapterMode": {
+          "type": "string",
+          "default": "stdin",
+          "enum": [
+            "stdin",
+            "claude_file",
+            "prompt_arg"
+          ],
+          "description": "Adapter mode for Brain CLI invocation."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {}
+}

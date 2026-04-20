@@ -1,0 +1,45 @@
+{
+  "final_goal": "Mục tiêu cuối cùng của dự án",
+  "machine_checks": [
+    "pnpm test",
+    "pnpm lint",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Task title here",
+      "description": "Detailed objective of this task",
+      "allowed_files": [
+        "src/components/**/*.tsx",
+        "src/lib/auth.ts"
+      ],
+      "definition_of_done": [
+        "Criterion 1 (measurable)",
+        "Criterion 2 (measurable)",
+        "Tests pass",
+        "Build successful"
+      ],
+      "checks": [
+        "pnpm test auth",
+        "pnpm lint"
+      ],
+      "dependencies": [],
+      "estimated_time": "30 minutes"
+    }
+  ],
+  "guardrails": [
+    "Không được sửa file ngoài allowed_files",
+    "Không được thêm dependency mới mà không báo cáo",
+    "Không được thay đổi public API"
+  ],
+  "escalation_conditions": [
+    "Retry > 2 lần",
+    "Sửa file ngoài allowed_files",
+    "Machine checks fail nặng"
+  ],
+  "metadata": {
+    "total_tasks": 1,
+    "source": "blueprint.md"
+  }
+}

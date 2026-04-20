@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# VS Code Extension
+node_modules/
+out/
+*.vsix
+
+# Logs
+*.log
+logs/
+
+# Vibecode runtime files
+.aiwf/run/
+.aiwf/input/*.md
+!.aiwf/input/goal.md
+
+# Temp files
+_temp_*
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
