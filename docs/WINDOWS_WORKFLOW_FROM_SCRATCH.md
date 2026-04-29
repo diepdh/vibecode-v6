@@ -67,13 +67,13 @@ $env:VIBECODE_SCRIPTS_DIR = "C:\Users\dohuy\Downloads\vibecode-v6-updated\python
 $env:VIBECODE_BRAIN_CLI = "codex"
 
 # Phase A Brain model (plan + synthesize)
-$env:VIBECODE_BRAIN_PHASE_A_MODEL = "gpt-5.4"
+$env:VIBECODE_BRAIN_PHASE_A_MODEL = "gpt-5.5"
 
 # Phase B Reviewer model
 $env:VIBECODE_REVIEWER_MODEL = "gpt-5.3-codex"
 
 # Coder dùng Gemini CLI
-$env:VIBECODE_CODER_CLI = "gemini"
+$env:VIBECODE_CODER_CLI = "gemini.cmd"
 
 # Để trống để Gemini CLI tự chọn model theo ngữ cảnh/cost
 $env:VIBECODE_CODER_MODEL = ""
@@ -125,6 +125,10 @@ Cần có đủ 4 file:
 ```powershell
 cd C:\Users\dohuy\Downloads\vibecode-v6-updated\python
 python build_tasks_from_blueprint.py C:\work\my-new-project\.aiwf\input\blueprint.md C:\work\my-new-project\.aiwf\run\
+
+cd "C:\Users\dohuy\Downloads\01. Documents\Hieu\V6"
+python "C:\Users\dohuy\Downloads\vibecode-v6-updated\python\orchestrator.py" status
+python "C:\Users\dohuy\Downloads\vibecode-v6-updated\python\orchestrator.py" loop
 ```
 
 Kết quả cần có:

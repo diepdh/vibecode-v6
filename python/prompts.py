@@ -268,6 +268,12 @@ Sau đó tạo `blueprint.md` - bản chốt cuối cùng để đi vào tự đ
 - [ ] Tests pass
 - [ ] Build successful
 
+**Pitfalls & Mitigation:**
+- Pitfall: [lỗi dễ gặp nhất của task]
+  - Mitigation: [cách phòng từ đầu]
+- Pitfall: [lỗi dễ gặp thứ hai]
+  - Mitigation: [cách phòng]
+
 **Machine Checks:**
 - `pnpm test auth`
 - `pnpm lint`
@@ -310,6 +316,7 @@ Dừng và chờ human nếu:
 - Machine checks phải runnable
 - Mọi quyết định quan trọng phải có rationale
 - Ghi rõ feedback nào được chấp nhận, feedback nào bị reject và lý do
+- Nếu có `COMMON FAILURES RUNBOOK` trong input, bắt buộc áp dụng vào thiết kế DoD và `Pitfalls & Mitigation`.
 """
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -363,6 +370,7 @@ NOTES:
 ## QUY TẮC
 ### LUÔN LÀM:
 - Đọc kỹ Definition of Done trước khi code
+- Đọc `COMMON FAILURES RUNBOOK` (nếu được cung cấp trong context) trước khi sửa code
 - Chỉ sửa file trong allowed_files
 - Comment code phức tạp
 - Follow coding conventions từ blueprint
@@ -375,6 +383,7 @@ NOTES:
 - Thay đổi public API mà không được yêu cầu
 - Làm thêm feature ngoài scope task
 - Báo DONE khi chưa verify code chạy được
+- Tạo thư mục shadow kiểu `V3/xphd_python/...`; luôn sửa trực tiếp trong `xphd_python/...`
 
 ## KHI GẶP VẤN ĐỀ
 Nếu gặp blocker:
@@ -453,6 +462,12 @@ Bạn sẽ nhận:
 
 ## DECISION LOGIC
 
+### Bằng chứng thay đổi hợp lệ (khi repo có file mới chưa stage):
+- Nếu phần `GIT DIFF` chứa `git status --porcelain` và có patch `diff --git` cho file mới,
+  coi đó là bằng chứng thay đổi hợp lệ để audit.
+- Nếu `ARTIFACT_SNAPSHOTS_FOR_REVIEW` có nội dung file đầy đủ trong allowed_files,
+  được dùng để xác minh DoD thay cho line-by-line git history.
+
 ### PASS khi:
 - Tất cả DoD được đáp ứng
 - Machine checks pass
@@ -515,7 +530,7 @@ def get_prompt_for_role(role: str) -> str:
     return prompts[role]
 
 
-def build_coder_context(task: dict, blueprint: str, previous_feedback: str = None) -> str:
+def build_coder_context(task: dict, blueprint: str, previous_feedback: str = None, runbook: str = "") -> str:
     """
     Xây dựng context đầy đủ cho Gemini Coder
     
@@ -549,6 +564,14 @@ def build_coder_context(task: dict, blueprint: str, previous_feedback: str = Non
 ## BLUEPRINT CONTEXT
 
 {blueprint}
+"""
+
+    if runbook:
+        context += f"""
+
+## COMMON FAILURES RUNBOOK (MUST APPLY)
+
+{runbook}
 """
     
     if previous_feedback:
