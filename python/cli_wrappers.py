@@ -526,16 +526,35 @@ def parse_json_from_response(response: str) -> Optional[Dict[str, Any]]:
 
 def _read_optional_runbook_from_input_dir(seed_file: str, filename: str = "common_failures_runbook.md") -> str:
     """
-    Try reading runbook from the same input directory as seed_file.
+    Try reading the shared Vibecode runbook first, then legacy workspace copies.
     Returns empty string if not found.
     """
+    candidates = []
+    script_dir = Path(__file__).resolve().parent
+    if script_dir.name.lower() == "python":
+        candidates.append(script_dir.parent / filename)
+    candidates.append(script_dir / filename)
     try:
         base_dir = Path(seed_file).resolve().parent
-        runbook_path = base_dir / filename
-        if runbook_path.exists():
-            return read_file(str(runbook_path))
+        candidates.append(base_dir / filename)
+        if base_dir.name == "input":
+            candidates.append(base_dir.parent.parent / filename)
+        else:
+            candidates.append(base_dir.parent / filename)
     except Exception:
         pass
+
+    seen = set()
+    for runbook_path in candidates:
+        try:
+            resolved = runbook_path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if resolved.exists():
+                return read_file(str(resolved))
+        except Exception:
+            pass
     return ""
 
 

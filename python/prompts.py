@@ -3,6 +3,35 @@ Vibecode v6 - Prompt Templates
 Chứa tất cả prompt templates cho Planning và Execution phases
 """
 
+from pathlib import Path
+
+
+def _load_instruction_file(workspace_root: str, role: str) -> str:
+    """
+    Load agent instruction file từ workspace root.
+    Thứ tự tìm: workspace_root → parent → grandparent (tối đa 3 cấp).
+    role: 'brain' | 'coder' | 'reviewer'
+    """
+    filename_map = {
+        "brain": "BRAIN_AGENT_INSTRUCTION_v2.md",
+        "coder": "CODER_AGENT_INSTRUCTION_v2.md",
+        "reviewer": "REVIEWER_AGENT_INSTRUCTION_v2.md",
+    }
+    filename = filename_map.get(role.lower())
+    if not filename:
+        return ""
+
+    search_path = Path(workspace_root)
+    for _ in range(3):
+        candidate = search_path / filename
+        if candidate.exists():
+            try:
+                return candidate.read_text(encoding="utf-8")
+            except Exception:
+                return ""
+        search_path = search_path.parent
+    return ""
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #                         PHASE A: PLANNING PROMPTS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -210,7 +239,7 @@ Bạn là **Gemini** - reviewer độc lập thứ 2 đánh giá plan.
 BRAIN_SYNTHESIZER_PROMPT = """# VIBECODE v6 - BRAIN SYNTHESIZER
 
 ## VAI TRÒ
-Bạn là **Brain Synthesizer** - tổng hợp plan gốc và 2 feedback để tạo blueprint cuối cùng.
+Bạn là **Brain Synthesizer** - tổng hợp plan gốc và 2 feedback để tạo blueprint và contract cuối cùng.
 
 ## NHIỆM VỤ
 Đọc 3 files:
@@ -218,11 +247,20 @@ Bạn là **Brain Synthesizer** - tổng hợp plan gốc và 2 feedback để t
 - `feedback_1.md` (từ Claude)
 - `feedback_2.md` (từ Gemini)
 
-Sau đó tạo `blueprint.md` - bản chốt cuối cùng để đi vào tự động hóa.
+Sau đó tạo **2 files**:
+1. `blueprint.md` - Kiến trúc tổng thể, module map, data flow, tech decisions
+2. `contract.md` - Scope chốt, DoD toàn dự án, môi trường kỹ thuật
+
+> ⚠️ Hai file này phải **đồng bộ**: mọi module trong blueprint phải có deliverable tương ứng
+> trong contract. Mọi ràng buộc trong contract phải có foundation trong blueprint.
 
 ## YÊU CẦU OUTPUT
 
-### Cấu trúc `blueprint.md`:
+---
+
+### File 1: `blueprint.md`
+
+#### Cấu trúc `blueprint.md`:
 
 ```markdown
 # Blueprint: [Tên dự án]
@@ -242,10 +280,19 @@ Sau đó tạo `blueprint.md` - bản chốt cuối cùng để đi vào tự đ
 
 ### Decision 2: ...
 
+## Module Map
+```
+[Module A] ──► [Module B] ──► [Module C]
+     │                              │
+     └──────────────────────────────►[Module D]
+```
+
+## Data Flow & Schema
+[Luồng dữ liệu qua hệ thống, schema tại các điểm giao tiếp quan trọng]
+
 ## Synthesis Notes
 ### Accepted from feedback_1 (Claude):
 - [Point 1 được chấp nhận và lý do]
-- [Point 2 được chấp nhận và lý do]
 
 ### Accepted from feedback_2 (Gemini):
 - [Point 1 được chấp nhận và lý do]
@@ -309,6 +356,46 @@ Dừng và chờ human nếu:
 - [ ] [Custom metric 1]
 ```
 
+---
+
+### File 2: `contract.md`
+
+#### Cấu trúc `contract.md`:
+
+```markdown
+# Contract: [Tên dự án]
+
+## Scope (Phạm vi thực hiện)
+[Liệt kê cụ thể từng deliverable — đủ cụ thể để kiểm chứng]
+- [ ] Deliverable 1: [mô tả rõ ràng]
+- [ ] Deliverable 2: [mô tả rõ ràng]
+
+## Out-of-Scope
+[Những gì KHÔNG làm trong phiên này]
+- Không xây dựng: [tính năng X]
+- Không deploy: [môi trường Y]
+
+## Definition of Done — Toàn dự án
+Dự án hoàn thành khi:
+- [ ] Tất cả module chạy không lỗi trong môi trường đã thỏa thuận
+- [ ] Đạt đủ tiêu chí kỹ thuật (performance, accuracy, format...)
+- [ ] Code có comment đủ để người khác đọc hiểu và tái lập
+- [ ] Tất cả task PASS qua reviewer
+- [ ] README hoặc tài liệu vận hành tối thiểu tồn tại
+- [ ] [Tiêu chí dự án cụ thể]
+
+## Môi trường kỹ thuật
+- OS: [Windows / Linux / macOS]
+- Language: [Python 3.x / Node.js x / Go x]
+- Framework: [tên + version]
+- Dependency manager: [pip / npm / pnpm / go mod]
+- Runtime: [local / Docker / cloud]
+
+## [Xác nhận: APPROVED]
+```
+
+---
+
 ## QUY TẮC
 - Task phải đủ nhỏ (15-45 phút mỗi task)
 - Definition of Done phải measurable
@@ -316,7 +403,9 @@ Dừng và chờ human nếu:
 - Machine checks phải runnable
 - Mọi quyết định quan trọng phải có rationale
 - Ghi rõ feedback nào được chấp nhận, feedback nào bị reject và lý do
-- Nếu có `COMMON FAILURES RUNBOOK` trong input, bắt buộc áp dụng vào thiết kế DoD và `Pitfalls & Mitigation`.
+- Nếu có `COMMON FAILURES RUNBOOK` trong input, bắt buộc áp dụng vào thiết kế DoD và `Pitfalls & Mitigation`
+- **PHẢI tạo CẢ HAI file**: `blueprint.md` VÀ `contract.md` — không tạo một mình là thiếu
+- Blueprint và Contract phải đồng bộ: không có module nào trong blueprint mà không có deliverable trong contract
 """
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -501,8 +590,185 @@ Bạn sẽ nhận:
 """
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#                     POST-WORKFLOW RUNBOOK UPDATE PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+LESSONS_SYNTHESIZER_PROMPT = """# VIBECODE v6 - LESSONS SYNTHESIZER
+
+## VAI TRÒ
+Bạn là **Lessons Synthesizer** — chắt lọc toàn bộ lịch sử lỗi trong runbook thành
+bộ bài học ngắn gọn, có mức ưu tiên, theo từng vai trò trong hệ thống 3 Agent.
+
+## NHIỆM VỤ
+Đọc `COMMON FAILURES RUNBOOK` và tổng hợp thành `AGENT_LESSONS.md` —
+file "bộ nhớ học tập" được inject vào đầu context của từng agent trước khi làm việc.
+
+## YÊU CẦU OUTPUT
+
+Trả về nội dung của `AGENT_LESSONS.md` theo đúng format sau:
+
+```markdown
+# AGENT_LESSONS.md — Bài học tích lũy từ các workflow đã chạy
+
+> Cập nhật lần cuối: [ngày]
+> Tổng số lỗi trong runbook: [N]
+
+---
+
+## Cho Brain (Planner & Synthesizer)
+
+### Quy tắc PHẢI LÀM (rút ra từ lỗi thực tế):
+1. [Quy tắc cụ thể, ngắn gọn — tối đa 1 dòng]
+2. ...
+
+### Bẫy hay gặp nhất (tránh ngay từ khi viết blueprint):
+- **[Tên bẫy]**: [Mô tả + cách tránh trong 1 dòng]
+- ...
+
+---
+
+## Cho Coder
+
+### Quy tắc PHẢI LÀM:
+1. ...
+
+### Bẫy hay gặp nhất:
+- **[Tên bẫy]**: [Mô tả + cách tránh]
+- ...
+
+---
+
+## Cho Reviewer
+
+### Quy tắc PHẢI LÀM:
+1. ...
+
+### Bẫy hay gặp nhất:
+- **[Tên bẫy]**: [Mô tả + cách tránh]
+- ...
+
+---
+
+## Top 5 lỗi nghiêm trọng nhất (mọi vai trò phải biết):
+1. **[Tên lỗi]** — [1 câu mô tả tác động + cách tránh]
+2. ...
+```
+
+## QUY TẮC TỔNG HỢP
+- Chỉ đưa vào những gì THỰC SỰ hay gặp — không liệt kê hết tất cả lỗi
+- Ưu tiên lỗi có tần suất cao và hậu quả nghiêm trọng
+- Mỗi quy tắc/bẫy phải actionable — đọc xong biết ngay phải làm gì
+- Tổng độ dài file không quá 200 dòng — súc tích là ưu tiên
+- Dùng tiếng Việt có dấu
+"""
+
+POST_WORKFLOW_RUNBOOK_UPDATE_PROMPT = """# VIBECODE v6 - POST-WORKFLOW RUNBOOK ANALYST
+
+## VAI TRÒ
+Bạn là **Runbook Analyst** — phân tích lỗi thực tế sau workflow để cập nhật Common Failures Runbook.
+
+## NHIỆM VỤ
+Đọc dữ liệu lỗi từ workflow vừa chạy, xác định **pattern lỗi MỚI** chưa có trong runbook,
+và tạo ra các entry mới theo đúng format.
+
+## INPUT
+Bạn sẽ nhận:
+1. Nội dung runbook hiện tại (`CURRENT RUNBOOK`)
+2. Danh sách sự kiện lỗi/block trong workflow (`WORKFLOW FAILURES`)
+
+## YÊU CẦU OUTPUT
+
+### Khi có lỗi mới:
+Với mỗi pattern lỗi THỰC SỰ MỚI (không trùng với runbook hiện tại), viết theo format:
+
+```markdown
+### [N]) [Tên lỗi ngắn gọn]
+- Dấu hiệu:
+  - [Triệu chứng rõ ràng có thể quan sát được]
+- Nguyên nhân gốc:
+  - [Root cause]
+- Xử trí chuẩn:
+  1. [Bước xử lý]
+- Phòng ngừa:
+  - [Cách phòng trong blueprint/DoD/prompt]
+```
+
+### Khi không có lỗi mới:
+Trả về đúng dòng sau và không thêm gì khác:
+```
+KHÔNG CÓ LỖI MỚI
+```
+
+## QUY TẮC
+- Chỉ tạo entry cho lỗi THỰC SỰ XẢY RA trong workflow này, không suy diễn
+- Số thứ tự [N] tiếp nối sau số entry cuối của runbook hiện tại
+- Mỗi entry phải có đủ 4 mục: Dấu hiệu, Nguyên nhân gốc, Xử trí chuẩn, Phòng ngừa
+- Không lặp lại lỗi đã có trong runbook dù triệu chứng tương tự
+- Không thêm lời dẫn hay giải thích ngoài các entry
+"""
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #                         HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def build_lessons_synthesis_context(current_runbook: str, today: str = "") -> str:
+    """
+    Xây dựng context để Brain tổng hợp runbook thành AGENT_LESSONS.md.
+
+    Args:
+        current_runbook: Nội dung common_failures_runbook.md
+        today: Chuỗi ngày hiện tại (YYYY-MM-DD)
+
+    Returns:
+        Full context string
+    """
+    return f"""{LESSONS_SYNTHESIZER_PROMPT}
+
+## COMMON FAILURES RUNBOOK
+
+{current_runbook}
+
+---
+Ngày tổng hợp: {today or "hôm nay"}
+"""
+
+
+def build_post_workflow_runbook_context(current_runbook: str, failures: list) -> str:
+    """
+    Xây dựng context cho Brain để phân tích lỗi workflow và cập nhật runbook.
+
+    Args:
+        current_runbook: Nội dung runbook hiện tại
+        failures: List of dicts với keys: task_id, stage, reason, decision
+
+    Returns:
+        Full context string gửi cho Brain
+    """
+    if not failures:
+        return ""
+
+    failures_text = ""
+    for i, f in enumerate(failures, 1):
+        failures_text += f"""
+### Sự kiện #{i}
+- Task: {f.get('task_id', 'unknown')}
+- Stage: {f.get('stage', 'unknown')}
+- Quyết định: {f.get('decision', 'unknown')}
+- Lý do: {f.get('reason', '')}
+"""
+
+    context = f"""{POST_WORKFLOW_RUNBOOK_UPDATE_PROMPT}
+
+## CURRENT RUNBOOK
+
+{current_runbook}
+
+## WORKFLOW FAILURES
+
+{failures_text}
+"""
+    return context
+
 
 def get_prompt_for_role(role: str) -> str:
     """
@@ -522,6 +788,8 @@ def get_prompt_for_role(role: str) -> str:
         "brain_synthesizer": BRAIN_SYNTHESIZER_PROMPT,
         "gemini_coder": GEMINI_CODER_PROMPT,
         "brain_task_reviewer": BRAIN_TASK_REVIEWER_PROMPT,
+        "post_workflow_runbook": POST_WORKFLOW_RUNBOOK_UPDATE_PROMPT,
+        "lessons_synthesizer": LESSONS_SYNTHESIZER_PROMPT,
     }
     
     if role not in prompts:
@@ -530,19 +798,35 @@ def get_prompt_for_role(role: str) -> str:
     return prompts[role]
 
 
-def build_coder_context(task: dict, blueprint: str, previous_feedback: str = None, runbook: str = "") -> str:
+def build_coder_context(task: dict, blueprint: str, previous_feedback: str = None, runbook: str = "", instruction: str = "", lessons: str = "") -> str:
     """
     Xây dựng context đầy đủ cho Gemini Coder
-    
+
     Args:
         task: Task object từ tasks.json
         blueprint: Nội dung blueprint.md
         previous_feedback: Review feedback từ lần trước (nếu retry)
-    
+        runbook: Nội dung common_failures_runbook.md
+        instruction: Nội dung CODER_AGENT_INSTRUCTION_v2.md (bắt buộc đọc trước)
+        lessons: Nội dung AGENT_LESSONS.md (bài học tích lũy từ các lần chạy trước)
+
     Returns:
         Full context string
     """
-    context = f"""{GEMINI_CODER_PROMPT}
+    header = ""
+    if instruction:
+        header = f"""## ⚠️ BẮT BUỘC ĐỌC TRƯỚC KHI LÀM BẤT CỨ ĐIỀU GÌ
+
+Đây là hướng dẫn vai trò và nguyên tắc làm việc của bạn trong hệ thống 3 Agent.
+Bạn PHẢI đọc và tuân thủ toàn bộ nội dung sau trước khi bắt đầu thực thi task:
+
+{instruction}
+
+---
+
+"""
+
+    context = f"""{header}{GEMINI_CODER_PROMPT}
 
 ## CURRENT TASK
 
@@ -566,6 +850,16 @@ def build_coder_context(task: dict, blueprint: str, previous_feedback: str = Non
 {blueprint}
 """
 
+    if lessons:
+        context += f"""
+
+## BÀI HỌC TỪ CÁC LẦN CHẠY TRƯỚC (ĐỌC TRƯỚC KHI CODE)
+
+Đây là những bài học được chắt lọc từ các workflow đã chạy. Áp dụng ngay từ đầu.
+
+{lessons}
+"""
+
     if runbook:
         context += f"""
 
@@ -573,7 +867,7 @@ def build_coder_context(task: dict, blueprint: str, previous_feedback: str = Non
 
 {runbook}
 """
-    
+
     if previous_feedback:
         context += f"""
 
@@ -589,20 +883,35 @@ Hãy sửa theo feedback này.
     return context
 
 
-def build_reviewer_context(task: dict, coder_report: str, git_diff: str, checks_output: str) -> str:
+def build_reviewer_context(task: dict, coder_report: str, git_diff: str, checks_output: str, instruction: str = "", lessons: str = "") -> str:
     """
     Xây dựng context đầy đủ cho Brain Reviewer
-    
+
     Args:
         task: Task object từ tasks.json
         coder_report: Output từ Gemini Coder
         git_diff: Git diff output
         checks_output: Machine checks output
-    
+        instruction: Nội dung REVIEWER_AGENT_INSTRUCTION_v2.md (bắt buộc đọc trước)
+        lessons: Nội dung AGENT_LESSONS.md (bài học tích lũy từ các lần chạy trước)
+
     Returns:
         Full context string
     """
-    context = f"""{BRAIN_TASK_REVIEWER_PROMPT}
+    header = ""
+    if instruction:
+        header = f"""## ⚠️ BẮT BUỘC ĐỌC TRƯỚC KHI REVIEW
+
+Đây là hướng dẫn vai trò và nguyên tắc đánh giá của bạn trong hệ thống 3 Agent.
+Bạn PHẢI đọc và tuân thủ toàn bộ nội dung sau trước khi bắt đầu review:
+
+{instruction}
+
+---
+
+"""
+
+    context = f"""{header}{BRAIN_TASK_REVIEWER_PROMPT}
 
 ## CURRENT TASK
 
@@ -632,5 +941,13 @@ def build_reviewer_context(task: dict, coder_report: str, git_diff: str, checks_
 
 Đánh giá task này dựa trên Definition of Done và output JSON theo format đã chỉ định.
 """
-    
+
+    if lessons:
+        context += f"""
+
+## BÀI HỌC TỪ CÁC LẦN CHẠY TRƯỚC (THAM KHẢO KHI REVIEW)
+
+{lessons}
+"""
+
     return context
